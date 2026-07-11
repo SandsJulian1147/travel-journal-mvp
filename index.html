@@ -1,0 +1,2339 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>旅行复盘游记工作台离线版</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #18201f;
+      --muted: #687272;
+      --line: #dde5e2;
+      --paper: #f5f6f1;
+      --panel: #ffffff;
+      --soft: #f8faf7;
+      --brand: #0f766e;
+      --brand-dark: #115e59;
+      --brand-soft: #e3f3ee;
+      --blue: #2f5f98;
+      --amber: #b7791f;
+      --red: #a33d2d;
+      --shadow: 0 18px 44px rgba(24, 32, 31, 0.1);
+      --shadow-soft: 0 8px 22px rgba(24, 32, 31, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        linear-gradient(90deg, rgba(15, 118, 110, 0.05) 0 1px, transparent 1px),
+        linear-gradient(180deg, rgba(47, 95, 152, 0.04) 0 1px, transparent 1px),
+        var(--paper);
+      background-size: 44px 44px;
+    }
+
+    button,
+    input,
+    textarea,
+    select {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: minmax(300px, 360px) minmax(420px, 1fr) minmax(340px, 420px);
+      gap: 14px;
+      padding: 14px;
+    }
+
+    .panel {
+      min-width: 0;
+      border: 1px solid rgba(221, 229, 226, 0.92);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.92);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .sidebar,
+    .writer,
+    .output {
+      max-height: calc(100vh - 28px);
+      overflow: auto;
+    }
+
+    .sidebar {
+      padding: 20px;
+    }
+
+    .brand {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+
+    .mark {
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      color: white;
+      background: linear-gradient(145deg, var(--brand), var(--blue));
+      font-weight: 900;
+      box-shadow: 0 12px 26px rgba(15, 118, 110, 0.22);
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+
+    h1 {
+      font-size: 21px;
+      line-height: 1.15;
+      letter-spacing: 0;
+    }
+
+    .tagline {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .toolbar,
+    .button-row {
+      display: grid;
+      gap: 10px;
+    }
+
+    .button-row.two {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .primary,
+    .secondary,
+    .ghost,
+    .danger {
+      min-height: 40px;
+      border-radius: 7px;
+      padding: 0 13px;
+      font-weight: 800;
+      border: 1px solid transparent;
+    }
+
+    .primary {
+      color: white;
+      background: linear-gradient(180deg, var(--brand), var(--brand-dark));
+      box-shadow: 0 10px 22px rgba(15, 118, 110, 0.22);
+    }
+
+    .secondary {
+      color: var(--ink);
+      border-color: var(--line);
+      background: var(--panel);
+    }
+
+    .ghost {
+      color: var(--brand-dark);
+      border-color: rgba(15, 118, 110, 0.2);
+      background: var(--brand-soft);
+    }
+
+    .danger {
+      color: var(--red);
+      border-color: rgba(163, 61, 45, 0.18);
+      background: #fff4ef;
+    }
+
+    .primary:hover,
+    .secondary:hover,
+    .ghost:hover,
+    .danger:hover {
+      transform: translateY(-1px);
+    }
+
+    .status-card {
+      display: grid;
+      gap: 10px;
+      margin: 16px 0;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: linear-gradient(180deg, var(--brand-soft), rgba(255, 255, 255, 0.92));
+    }
+
+    .status-card strong {
+      font-size: 14px;
+    }
+
+    .progress-bar {
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(15, 118, 110, 0.13);
+      overflow: hidden;
+    }
+
+    .progress-bar span {
+      display: block;
+      height: 100%;
+      width: 0;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--brand), var(--blue));
+      transition: width 180ms ease;
+    }
+
+    .progress-meta {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin: 20px 0 10px;
+    }
+
+    .section-title h2 {
+      font-size: 15px;
+    }
+
+    .section-title small {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .trip-list {
+      display: grid;
+      gap: 9px;
+    }
+
+    .trip-card {
+      width: 100%;
+      display: grid;
+      gap: 6px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--ink);
+      background: rgba(255, 255, 255, 0.86);
+      text-align: left;
+    }
+
+    .trip-card.active,
+    .trip-card:hover {
+      border-color: rgba(15, 118, 110, 0.38);
+      background: var(--brand-soft);
+    }
+
+    .trip-card strong {
+      font-size: 14px;
+      line-height: 1.35;
+    }
+
+    .trip-card span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .writer {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      background: rgba(255, 255, 255, 0.74);
+    }
+
+    .writer-head {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.92);
+    }
+
+    .writer-head h2 {
+      font-size: 20px;
+      line-height: 1.25;
+    }
+
+    .writer-head p {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .meeting-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .meeting-tabs button {
+      min-height: 34px;
+      padding: 0 12px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      background: var(--soft);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .meeting-tabs button.active {
+      color: white;
+      border-color: var(--brand);
+      background: var(--brand);
+    }
+
+    .scroll-body {
+      overflow: auto;
+      padding: 20px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+    }
+
+    .field.full {
+      grid-column: 1 / -1;
+    }
+
+    .field label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .field input,
+    .field textarea,
+    .field select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 11px;
+      color: var(--ink);
+      background: rgba(255, 255, 255, 0.92);
+      outline: none;
+      resize: vertical;
+    }
+
+    .field textarea {
+      min-height: 88px;
+      line-height: 1.55;
+    }
+
+    .field input:focus,
+    .field textarea:focus,
+    .field select:focus {
+      border-color: rgba(15, 118, 110, 0.48);
+      box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.11);
+    }
+
+    .agenda {
+      display: grid;
+      gap: 16px;
+    }
+
+    .agenda-section {
+      display: none;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.92);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .agenda-section.active {
+      display: block;
+    }
+
+    .agenda-title {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .agenda-title h3 {
+      font-size: 16px;
+      line-height: 1.35;
+    }
+
+    .agenda-title p {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .agenda-content {
+      display: grid;
+      gap: 14px;
+      padding: 16px;
+    }
+
+    .prompt-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .prompt-chip {
+      max-width: 100%;
+      border-radius: 999px;
+      padding: 6px 9px;
+      color: #36544e;
+      background: var(--brand-soft);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .timeline-list,
+    .matter-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .timeline-item,
+    .matter-item {
+      display: grid;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--soft);
+    }
+
+    .inline-row {
+      display: grid;
+      grid-template-columns: 140px minmax(120px, 1fr) auto;
+      gap: 10px;
+      align-items: end;
+    }
+
+    .movement-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .logistics-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .core-note-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 10px;
+    }
+
+    .timeline-subtitle {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .route-map-card {
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+      border: 1px solid rgba(15, 118, 110, 0.16);
+      border-radius: 8px;
+      background: linear-gradient(180deg, rgba(227, 243, 238, 0.8), rgba(255, 255, 255, 0.92));
+    }
+
+    .route-map-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .route-map-head h4 {
+      margin: 0;
+      font-size: 14px;
+    }
+
+    .route-map-head p,
+    .route-summary {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .route-map {
+      position: relative;
+      min-height: 220px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background:
+        linear-gradient(90deg, rgba(24, 32, 31, 0.07) 1px, transparent 1px),
+        linear-gradient(180deg, rgba(24, 32, 31, 0.06) 1px, transparent 1px),
+        linear-gradient(145deg, #eef7f1, #f7f1e5);
+      background-size: 10% 20%, 10% 20%, auto;
+    }
+
+    .route-map svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .route-pins {
+      position: absolute;
+      inset: 0;
+    }
+
+    .route-pin {
+      position: absolute;
+      display: grid;
+      place-items: center;
+      width: 24px;
+      height: 24px;
+      border: 2px solid white;
+      border-radius: 999px;
+      color: white;
+      background: var(--brand);
+      box-shadow: 0 8px 20px rgba(15, 118, 110, 0.28);
+      font-size: 11px;
+      font-weight: 900;
+      transform: translate(-50%, -50%);
+      transition: transform 180ms ease, box-shadow 180ms ease;
+      animation: route-pin-in 420ms both;
+    }
+
+    .route-pin.photo-pin {
+      width: 34px;
+      height: 34px;
+      background: var(--panel);
+      background-size: cover;
+      background-position: center;
+      color: white;
+    }
+
+    .route-pin.photo-pin::after {
+      content: "";
+      position: absolute;
+      inset: -5px;
+      border: 1px solid rgba(15, 118, 110, 0.32);
+      border-radius: 999px;
+      animation: route-pulse 2.2s infinite;
+    }
+
+    .route-pin:hover {
+      z-index: 2;
+      transform: translate(-50%, -50%) scale(1.08);
+    }
+
+    @keyframes route-pin-in {
+      from { opacity: 0; transform: translate(-50%, -50%) scale(0.7); }
+      to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    }
+
+    @keyframes route-pulse {
+      0%, 100% { opacity: 0.75; transform: scale(0.95); }
+      50% { opacity: 0; transform: scale(1.3); }
+    }
+
+    @keyframes route-draw {
+      from { stroke-dashoffset: 180; opacity: 0.15; }
+      to { stroke-dashoffset: 0; opacity: 0.84; }
+    }
+
+    .route-pin span {
+      position: absolute;
+      left: 22px;
+      top: 50%;
+      max-width: 140px;
+      padding: 4px 7px;
+      border: 1px solid rgba(255, 255, 255, 0.88);
+      border-radius: 999px;
+      color: var(--ink);
+      background: rgba(255, 255, 255, 0.86);
+      box-shadow: 0 8px 18px rgba(24, 32, 31, 0.08);
+      font-size: 11px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      transform: translateY(-50%);
+    }
+
+    .route-empty {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      color: var(--muted);
+      text-align: center;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .photo-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: end;
+    }
+
+    .photo-status {
+      min-height: 38px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .photo-status.ok { color: var(--brand-dark); }
+    .photo-status.warn { color: var(--amber); }
+
+    .photo-preview {
+      width: 38px;
+      height: 38px;
+      object-fit: cover;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+    }
+
+    .remove-photo {
+      min-height: 30px;
+      padding: 0 8px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      color: var(--muted);
+      background: var(--panel);
+      font-size: 12px;
+    }
+
+    .matter-row {
+      display: grid;
+      grid-template-columns: 130px 1fr auto;
+      gap: 10px;
+      align-items: end;
+    }
+
+    .small-action {
+      min-height: 38px;
+      padding: 0 10px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      color: var(--muted);
+      background: white;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .output {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      background: rgba(255, 255, 255, 0.94);
+    }
+
+    .output-head {
+      padding: 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .output-head h2 {
+      font-size: 18px;
+    }
+
+    .output-head p {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .output-body {
+      overflow: auto;
+      padding: 18px;
+      display: grid;
+      gap: 14px;
+      align-content: start;
+    }
+
+    .diary-preview {
+      min-height: 420px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+      background: var(--soft);
+      white-space: pre-wrap;
+      line-height: 1.72;
+      font-size: 14px;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .summary-card {
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: white;
+    }
+
+    .summary-card span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+
+    .summary-card b {
+      font-size: 18px;
+    }
+
+    .notice {
+      padding: 12px;
+      border: 1px solid rgba(183, 121, 31, 0.22);
+      border-radius: 8px;
+      color: #6b4a1c;
+      background: #fff8e8;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .save-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .save-status::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--brand);
+      box-shadow: 0 0 0 4px rgba(15, 118, 110, 0.1);
+    }
+
+    .file-import {
+      position: relative;
+      overflow: hidden;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .file-import input {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .offline-note {
+      margin-top: 12px;
+      padding: 12px;
+      border: 1px solid rgba(15, 118, 110, 0.16);
+      border-radius: 8px;
+      color: #36544e;
+      background: var(--brand-soft);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    @media print {
+      body {
+        background: white;
+      }
+
+      .sidebar,
+      .writer,
+      .output-head,
+      .summary-grid,
+      .button-row,
+      .notice,
+      .save-status {
+        display: none !important;
+      }
+
+      .app {
+        display: block;
+        min-height: auto;
+        padding: 0;
+      }
+
+      .output {
+        max-height: none;
+        border: 0;
+        box-shadow: none;
+      }
+
+      .output-body {
+        display: block;
+        padding: 0;
+      }
+
+      .diary-preview {
+        min-height: 0;
+        border: 0;
+        padding: 0;
+        background: white;
+        color: #111;
+        font-size: 12pt;
+        line-height: 1.8;
+      }
+    }
+
+    @media (max-width: 1120px) {
+      .app {
+        grid-template-columns: minmax(280px, 340px) minmax(420px, 1fr);
+      }
+
+      .output {
+        grid-column: 1 / -1;
+        max-height: none;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar,
+      .writer,
+      .output {
+        max-height: none;
+      }
+
+      .form-grid,
+      .inline-row,
+      .movement-row,
+      .logistics-grid,
+      .route-map-head,
+      .matter-row,
+      .summary-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <aside class="panel sidebar">
+      <div class="brand">
+        <div class="mark">记</div>
+        <div>
+          <h1>旅行复盘工作台</h1>
+          <p class="tagline">把过往出行整理成游记和感悟</p>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <button id="newTripButton" class="primary" type="button">新建过往旅行</button>
+        <div class="button-row two">
+          <button id="exportDataButton" class="secondary" type="button">导出记录</button>
+          <label class="secondary file-import">
+            导入备份
+            <input id="importDataInput" type="file" accept="application/json,.json">
+          </label>
+        </div>
+        <div class="button-row two">
+          <button id="resetDemoButton" class="secondary" type="button">恢复示例</button>
+          <button id="printButton" class="secondary" type="button">打印/PDF</button>
+        </div>
+      </div>
+      <div id="saveStatus" class="offline-note">线下版：所有内容自动保存在当前浏览器，本机处理，不上传。</div>
+
+      <section class="status-card">
+        <strong id="progressTitle">复盘完成度 0%</strong>
+        <div class="progress-bar"><span id="progressBar"></span></div>
+        <p id="progressMeta" class="progress-meta">先选择一次旅行，按会议议程补齐关键回忆点。</p>
+      </section>
+
+      <div class="section-title">
+        <h2>过往旅行档案</h2>
+        <small id="tripCount">0 次</small>
+      </div>
+      <section id="tripList" class="trip-list"></section>
+    </aside>
+
+    <section class="panel writer">
+      <header class="writer-head">
+        <h2 id="workbenchTitle">旅行复盘会议</h2>
+        <p id="workbenchSubtitle">用固定议程把一次旅行拆成背景、轨迹、事项、回忆点和感悟。</p>
+        <nav id="meetingTabs" class="meeting-tabs" aria-label="复盘议程">
+          <button type="button" data-tab="base" class="active">1 基本信息</button>
+          <button type="button" data-tab="route">2 轨迹节点</button>
+          <button type="button" data-tab="matters">3 重要事项</button>
+          <button type="button" data-tab="memory">4 回忆线索</button>
+          <button type="button" data-tab="reflection">5 感悟总结</button>
+        </nav>
+      </header>
+
+      <div class="scroll-body">
+        <div class="agenda">
+          <section class="agenda-section active" data-section="base">
+            <div class="agenda-title">
+              <div>
+                <h3>基本信息和出行动机</h3>
+                <p>先把这次旅行放回当时的生活背景里，游记才不会变成流水账。</p>
+              </div>
+              <button id="deleteTripButton" class="danger" type="button">删除</button>
+            </div>
+            <div class="agenda-content">
+              <div class="prompt-strip">
+                <span class="prompt-chip">为什么那时想去？</span>
+                <span class="prompt-chip">同行人是谁？</span>
+                <span class="prompt-chip">出发前最期待什么？</span>
+              </div>
+              <div class="form-grid">
+                <div class="field">
+                  <label for="titleInput">游记标题</label>
+                  <input id="titleInput" data-field="title" placeholder="例如：初夏京都慢慢走">
+                </div>
+                <div class="field">
+                  <label for="destinationInput">目的地</label>
+                  <input id="destinationInput" data-field="destination" placeholder="城市、国家或路线">
+                </div>
+                <div class="field">
+                  <label for="startInput">开始日期</label>
+                  <input id="startInput" data-field="startDate" type="date">
+                </div>
+                <div class="field">
+                  <label for="endInput">结束日期</label>
+                  <input id="endInput" data-field="endDate" type="date">
+                </div>
+                <div class="field">
+                  <label for="peopleInput">同行人</label>
+                  <input id="peopleInput" data-field="people" placeholder="一个人、朋友、家人、同事">
+                </div>
+                <div class="field">
+                  <label for="toneInput">生成语气</label>
+                  <select id="toneInput" data-field="tone">
+                    <option value="private">私人日记</option>
+                    <option value="story">叙事游记</option>
+                    <option value="clean">清爽总结</option>
+                  </select>
+                </div>
+                <div class="field full">
+                  <label for="reasonInput">当时为什么出发</label>
+                  <textarea id="reasonInput" data-field="reason" placeholder="写下这次旅行发生在什么阶段、为什么想去、出发前带着什么心情。"></textarea>
+                </div>
+                <div class="field full">
+                  <label for="expectationInput">出发前的期待</label>
+                  <textarea id="expectationInput" data-field="expectation" placeholder="当时最想看见、体验或逃离的是什么？"></textarea>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="agenda-section" data-section="route">
+            <div class="agenda-title">
+              <div>
+                <h3>轨迹节点</h3>
+                <p>把路线拆成几个关键节点：从哪里到哪里、怎么移动、在哪里停留、衣食住行和花费如何。</p>
+              </div>
+              <button id="addStopButton" class="ghost" type="button">添加节点到顶部</button>
+            </div>
+            <div class="agenda-content">
+              <section class="route-map-card" aria-label="真实轨迹串联">
+                <div class="route-map-head">
+                  <div>
+                    <h4>真实轨迹串联</h4>
+                  <p>节点照片会优先读取 EXIF 定位；没有定位时，再补充手动坐标。</p>
+                  </div>
+                  <small id="routePointCount">0 个坐标点</small>
+                </div>
+                <div id="routeMap" class="route-map">
+                  <svg id="routeMapSvg" viewBox="0 0 1000 420" preserveAspectRatio="none"></svg>
+                  <div id="routePins" class="route-pins"></div>
+                  <div id="routeEmpty" class="route-empty">先在轨迹节点里填写坐标，例如：35.0116, 135.7681</div>
+                </div>
+                <p id="routeSummary" class="route-summary">等待生成轨迹。</p>
+              </section>
+              <div class="prompt-strip">
+                <span class="prompt-chip">从 A 点到 B 点怎么去？</span>
+                <span class="prompt-chip">吃住行花费如何？</span>
+                <span class="prompt-chip">天气和穿着是否影响体验？</span>
+              </div>
+              <div id="timelineList" class="timeline-list"></div>
+            </div>
+          </section>
+
+          <section class="agenda-section" data-section="matters">
+            <div class="agenda-title">
+              <div>
+                <h3>重要事项</h3>
+                <p>记录那些会影响回忆质量的细节：交通、住宿、吃饭、意外、花费、提醒。</p>
+              </div>
+              <button id="addMatterButton" class="ghost" type="button">添加事项</button>
+            </div>
+            <div class="agenda-content">
+              <div class="prompt-strip">
+                <span class="prompt-chip">有什么值得下次照做？</span>
+                <span class="prompt-chip">有什么踩坑或意外？</span>
+                <span class="prompt-chip">花费和体力是否合理？</span>
+              </div>
+              <div id="matterList" class="matter-list"></div>
+            </div>
+          </section>
+
+          <section class="agenda-section" data-section="memory">
+            <div class="agenda-title">
+              <div>
+                <h3>回忆线索</h3>
+                <p>游记最有生命力的部分通常不是景点，而是画面、人物、味道和转折。</p>
+              </div>
+            </div>
+            <div class="agenda-content">
+              <div class="prompt-strip">
+                <span class="prompt-chip">最高光的一刻</span>
+                <span class="prompt-chip">最意外的一刻</span>
+                <span class="prompt-chip">最想保留的声音或气味</span>
+              </div>
+              <div class="form-grid">
+                <div class="field full">
+                  <label for="highlightInput">高光片段</label>
+                  <textarea id="highlightInput" data-memory="highlight" placeholder="哪一刻让你觉得这趟旅行值得？"></textarea>
+                </div>
+                <div class="field full">
+                  <label for="turningInput">意外或转折</label>
+                  <textarea id="turningInput" data-memory="turning" placeholder="有没有计划外的变化、迷路、争执、惊喜或临时决定？"></textarea>
+                </div>
+                <div class="field">
+                  <label for="personInput">关键人物</label>
+                  <textarea id="personInput" data-memory="person" placeholder="同行人、遇见的人、某个陌生人的一句话。"></textarea>
+                </div>
+                <div class="field">
+                  <label for="sensoryInput">感官记忆</label>
+                  <textarea id="sensoryInput" data-memory="sensory" placeholder="光线、气味、声音、天气、身体感受。"></textarea>
+                </div>
+                <div class="field full">
+                  <label for="photoNoteInput">照片素材备注</label>
+                  <textarea id="photoNoteInput" data-memory="photoNote" placeholder="照片只是素材补充：这里记下哪些照片适合放进游记，或哪些照片能唤起那一段。"></textarea>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="agenda-section" data-section="reflection">
+            <div class="agenda-title">
+              <div>
+                <h3>感悟总结</h3>
+                <p>把旅行从“去过哪里”推进到“这段经历对我意味着什么”。</p>
+              </div>
+            </div>
+            <div class="agenda-content">
+              <div class="prompt-strip">
+                <span class="prompt-chip">我有了什么变化？</span>
+                <span class="prompt-chip">下次会怎么旅行？</span>
+                <span class="prompt-chip">给未来自己的话</span>
+              </div>
+              <div class="form-grid">
+                <div class="field full">
+                  <label for="learnedInput">这次旅行让我意识到</label>
+                  <textarea id="learnedInput" data-reflection="learned" placeholder="写下观点、情绪、关系、生活状态上的变化。"></textarea>
+                </div>
+                <div class="field">
+                  <label for="regretInput">遗憾或未完成</label>
+                  <textarea id="regretInput" data-reflection="regret" placeholder="哪些事没做、没看、没说？"></textarea>
+                </div>
+                <div class="field">
+                  <label for="nextTimeInput">下次旅行提醒</label>
+                  <textarea id="nextTimeInput" data-reflection="nextTime" placeholder="给未来自己的经验提醒。"></textarea>
+                </div>
+                <div class="field full">
+                  <label for="closingInput">一句话收束</label>
+                  <textarea id="closingInput" data-reflection="closing" placeholder="这趟旅行最后留在心里的那句话。"></textarea>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </section>
+
+    <aside class="panel output">
+      <header class="output-head">
+        <h2>生成游记草稿</h2>
+        <p>根据已填写内容生成一篇连续的旅行日记，后续可以接入更强的 AI 润色。</p>
+      </header>
+      <div class="output-body">
+        <div class="summary-grid">
+          <div class="summary-card">
+            <span>轨迹节点</span>
+            <b id="stopCount">0</b>
+          </div>
+          <div class="summary-card">
+            <span>重要事项</span>
+            <b id="matterCount">0</b>
+          </div>
+          <div class="summary-card">
+            <span>路线距离</span>
+            <b id="routeDistance">0 km</b>
+          </div>
+        </div>
+        <div class="button-row two">
+          <button id="generateButton" class="primary" type="button">生成草稿</button>
+          <button id="copyButton" class="secondary" type="button">复制文本</button>
+        </div>
+        <div class="button-row two">
+          <button id="exportMarkdownButton" class="ghost" type="button">导出游记</button>
+          <button id="clearDiaryButton" class="secondary" type="button">清空草稿</button>
+        </div>
+        <p id="lastSavedText" class="save-status">等待保存</p>
+        <div id="copyStatus" class="notice">填写越具体，生成的游记越像自己的回忆，而不是普通攻略。</div>
+        <article id="diaryPreview" class="diary-preview"></article>
+      </div>
+    </aside>
+  </main>
+
+  <script>
+    const STORAGE_KEY = "travel-journal-meeting-mvp";
+
+    const state = {
+      trips: [],
+      activeTripId: "",
+      activeTab: "base",
+      generatedDiary: ""
+    };
+
+    const els = {
+      newTripButton: document.getElementById("newTripButton"),
+      exportDataButton: document.getElementById("exportDataButton"),
+      importDataInput: document.getElementById("importDataInput"),
+      resetDemoButton: document.getElementById("resetDemoButton"),
+      printButton: document.getElementById("printButton"),
+      saveStatus: document.getElementById("saveStatus"),
+      tripList: document.getElementById("tripList"),
+      tripCount: document.getElementById("tripCount"),
+      progressTitle: document.getElementById("progressTitle"),
+      progressBar: document.getElementById("progressBar"),
+      progressMeta: document.getElementById("progressMeta"),
+      workbenchTitle: document.getElementById("workbenchTitle"),
+      workbenchSubtitle: document.getElementById("workbenchSubtitle"),
+      meetingTabs: document.getElementById("meetingTabs"),
+      deleteTripButton: document.getElementById("deleteTripButton"),
+      titleInput: document.getElementById("titleInput"),
+      destinationInput: document.getElementById("destinationInput"),
+      startInput: document.getElementById("startInput"),
+      endInput: document.getElementById("endInput"),
+      peopleInput: document.getElementById("peopleInput"),
+      toneInput: document.getElementById("toneInput"),
+      reasonInput: document.getElementById("reasonInput"),
+      expectationInput: document.getElementById("expectationInput"),
+      addStopButton: document.getElementById("addStopButton"),
+      timelineList: document.getElementById("timelineList"),
+      routeMapSvg: document.getElementById("routeMapSvg"),
+      routePins: document.getElementById("routePins"),
+      routeEmpty: document.getElementById("routeEmpty"),
+      routePointCount: document.getElementById("routePointCount"),
+      routeSummary: document.getElementById("routeSummary"),
+      addMatterButton: document.getElementById("addMatterButton"),
+      matterList: document.getElementById("matterList"),
+      highlightInput: document.getElementById("highlightInput"),
+      turningInput: document.getElementById("turningInput"),
+      personInput: document.getElementById("personInput"),
+      sensoryInput: document.getElementById("sensoryInput"),
+      photoNoteInput: document.getElementById("photoNoteInput"),
+      learnedInput: document.getElementById("learnedInput"),
+      regretInput: document.getElementById("regretInput"),
+      nextTimeInput: document.getElementById("nextTimeInput"),
+      closingInput: document.getElementById("closingInput"),
+      stopCount: document.getElementById("stopCount"),
+      matterCount: document.getElementById("matterCount"),
+      routeDistance: document.getElementById("routeDistance"),
+      generateButton: document.getElementById("generateButton"),
+      copyButton: document.getElementById("copyButton"),
+      exportMarkdownButton: document.getElementById("exportMarkdownButton"),
+      clearDiaryButton: document.getElementById("clearDiaryButton"),
+      lastSavedText: document.getElementById("lastSavedText"),
+      copyStatus: document.getElementById("copyStatus"),
+      diaryPreview: document.getElementById("diaryPreview")
+    };
+
+    initialize();
+
+    function initialize() {
+      const saved = loadState();
+      state.trips = saved?.trips?.length ? saved.trips : getDemoTrips();
+      state.activeTripId = saved?.activeTripId || state.trips[0].id;
+      state.generatedDiary = saved?.generatedDiary || "";
+      bindEvents();
+      render();
+    }
+
+    function bindEvents() {
+      els.newTripButton.addEventListener("click", createTrip);
+      els.exportDataButton.addEventListener("click", exportData);
+      els.importDataInput.addEventListener("change", importData);
+      els.resetDemoButton.addEventListener("click", resetDemo);
+      els.printButton.addEventListener("click", printDiary);
+      els.deleteTripButton.addEventListener("click", deleteActiveTrip);
+      els.addStopButton.addEventListener("click", addStop);
+      els.addMatterButton.addEventListener("click", addMatter);
+      els.generateButton.addEventListener("click", () => {
+        state.generatedDiary = buildDiary(getActiveTrip());
+        saveState();
+        renderOutput();
+      });
+      els.copyButton.addEventListener("click", copyDiary);
+      els.exportMarkdownButton.addEventListener("click", exportMarkdown);
+      els.clearDiaryButton.addEventListener("click", () => {
+        state.generatedDiary = "";
+        saveState();
+        renderOutput();
+      });
+
+      document.addEventListener("change", event => {
+        const input = event.target.closest("[data-photo-input]");
+        if (!input || !input.files?.[0]) return;
+        handleStopPhoto(input.closest("[data-stop-id]"), input.files[0]);
+      });
+
+      els.tripList.addEventListener("click", event => {
+        const button = event.target.closest("[data-trip-id]");
+        if (!button) return;
+        state.activeTripId = button.dataset.tripId;
+        state.generatedDiary = "";
+        saveState();
+        render();
+      });
+
+      els.meetingTabs.addEventListener("click", event => {
+        const button = event.target.closest("[data-tab]");
+        if (!button) return;
+        state.activeTab = button.dataset.tab;
+        renderTabs();
+      });
+
+      document.addEventListener("input", event => {
+        const trip = getActiveTrip();
+        if (!trip) return;
+
+        if (event.target.dataset.field) {
+          trip[event.target.dataset.field] = event.target.value;
+          afterTripEdit();
+        }
+
+        if (event.target.dataset.memory) {
+          trip.memory[event.target.dataset.memory] = event.target.value;
+          afterTripEdit();
+        }
+
+        if (event.target.dataset.reflection) {
+          trip.reflection[event.target.dataset.reflection] = event.target.value;
+          afterTripEdit();
+        }
+
+        const stopNode = event.target.closest("[data-stop-id]");
+        if (stopNode && event.target.dataset.stopField) {
+          const stop = trip.stops.find(item => item.id === stopNode.dataset.stopId);
+          if (stop) {
+            stop[event.target.dataset.stopField] = event.target.value;
+            afterTripEdit();
+          }
+        }
+
+        const matterNode = event.target.closest("[data-matter-id]");
+        if (matterNode && event.target.dataset.matterField) {
+          const matter = trip.matters.find(item => item.id === matterNode.dataset.matterId);
+          if (matter) {
+            matter[event.target.dataset.matterField] = event.target.value;
+            afterTripEdit();
+          }
+        }
+      });
+
+      document.addEventListener("click", event => {
+        const removeStop = event.target.closest("[data-remove-stop]");
+        if (removeStop) {
+          const trip = getActiveTrip();
+          trip.stops = trip.stops.filter(item => item.id !== removeStop.dataset.removeStop);
+          afterTripEdit(true);
+        }
+
+        const removeMatter = event.target.closest("[data-remove-matter]");
+        if (removeMatter) {
+          const trip = getActiveTrip();
+          trip.matters = trip.matters.filter(item => item.id !== removeMatter.dataset.removeMatter);
+          afterTripEdit(true);
+        }
+
+        const removePhoto = event.target.closest("[data-remove-photo]");
+        if (removePhoto) {
+          const trip = getActiveTrip();
+          const stop = trip.stops.find(item => item.id === removePhoto.dataset.removePhoto);
+          if (stop) {
+            stop.photoDataUrl = "";
+            stop.photoName = "";
+            stop.photoGpsSource = "";
+            afterTripEdit(true);
+          }
+        }
+
+        const routePin = event.target.closest("[data-route-stop-id]");
+        if (routePin) {
+          state.activeTab = "route";
+          renderTabs();
+          document.querySelector(`[data-stop-id="${routePin.dataset.routeStopId}"]`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      });
+    }
+
+    function afterTripEdit(fullRender = false) {
+      state.generatedDiary = "";
+      saveState();
+      if (fullRender) {
+        render();
+        return;
+      }
+      renderTripList();
+      renderProgress();
+      renderOutputStats();
+      renderRouteMap();
+      renderOutput();
+      updateWorkbenchTitle();
+      renderSaveStatus();
+    }
+
+    function render() {
+      renderTripList();
+      renderForm();
+      renderTabs();
+      renderProgress();
+      renderRouteMap();
+      renderOutput();
+      updateWorkbenchTitle();
+      renderSaveStatus();
+    }
+
+    function renderTripList() {
+      els.tripList.innerHTML = "";
+      els.tripCount.textContent = `${state.trips.length} 次`;
+
+      for (const trip of state.trips) {
+        const button = document.createElement("button");
+        button.className = `trip-card${trip.id === state.activeTripId ? " active" : ""}`;
+        button.type = "button";
+        button.dataset.tripId = trip.id;
+        button.innerHTML = `
+          <strong>${escapeHtml(trip.title || "未命名旅行")}</strong>
+          <span>${escapeHtml(trip.destination || "未填写目的地")} · ${formatDateRange(trip.startDate, trip.endDate)}</span>
+          <span>${getCompletion(trip).percent}% 完成 · ${trip.stops.length} 个节点</span>
+        `;
+        els.tripList.appendChild(button);
+      }
+    }
+
+    function renderForm() {
+      const trip = getActiveTrip();
+      if (!trip) return;
+
+      els.titleInput.value = trip.title;
+      els.destinationInput.value = trip.destination;
+      els.startInput.value = trip.startDate;
+      els.endInput.value = trip.endDate;
+      els.peopleInput.value = trip.people;
+      els.toneInput.value = trip.tone;
+      els.reasonInput.value = trip.reason;
+      els.expectationInput.value = trip.expectation;
+      els.highlightInput.value = trip.memory.highlight;
+      els.turningInput.value = trip.memory.turning;
+      els.personInput.value = trip.memory.person;
+      els.sensoryInput.value = trip.memory.sensory;
+      els.photoNoteInput.value = trip.memory.photoNote;
+      els.learnedInput.value = trip.reflection.learned;
+      els.regretInput.value = trip.reflection.regret;
+      els.nextTimeInput.value = trip.reflection.nextTime;
+      els.closingInput.value = trip.reflection.closing;
+      renderStops();
+      renderMatters();
+    }
+
+    function renderTabs() {
+      for (const button of els.meetingTabs.querySelectorAll("[data-tab]")) {
+        button.classList.toggle("active", button.dataset.tab === state.activeTab);
+      }
+
+      for (const section of document.querySelectorAll("[data-section]")) {
+        section.classList.toggle("active", section.dataset.section === state.activeTab);
+      }
+    }
+
+    function renderStops() {
+      const trip = getActiveTrip();
+      els.timelineList.innerHTML = "";
+
+      if (!trip.stops.length) {
+        trip.stops.push(createBlankStop());
+      }
+
+      for (const stop of trip.stops) {
+        const node = document.createElement("article");
+        node.className = "timeline-item";
+        node.dataset.stopId = stop.id;
+        node.innerHTML = `
+          <div class="inline-row">
+            <div class="field">
+              <label>日期</label>
+              <input data-stop-field="date" type="date" value="${escapeAttr(stop.date)}">
+            </div>
+            <div class="field">
+              <label>重要程度</label>
+              <select data-stop-field="weight">
+                ${["普通", "重要", "高光"].map(item => `<option value="${item}"${item === stop.weight ? " selected" : ""}>${item}</option>`).join("")}
+              </select>
+            </div>
+            <button class="small-action" type="button" data-remove-stop="${stop.id}">移除</button>
+          </div>
+          <div class="timeline-subtitle">移动方式</div>
+          <div class="movement-row">
+            <div class="field">
+              <label>从哪里出发</label>
+              <input data-stop-field="from" value="${escapeAttr(stop.from)}" placeholder="A 点 / 上一站 / 住处">
+            </div>
+            <div class="field">
+              <label>到哪里 / 核心地点</label>
+              <input data-stop-field="to" value="${escapeAttr(stop.to || stop.place)}" placeholder="B 点 / 下一站 / 今日目的地">
+            </div>
+            <div class="field">
+              <label>交通方式</label>
+              <input data-stop-field="transport" value="${escapeAttr(stop.transport)}" placeholder="步行、地铁、火车、自驾、打车">
+            </div>
+          </div>
+          <div class="field">
+            <label>节点照片</label>
+            <div class="photo-row">
+              <input data-photo-input type="file" accept="image/jpeg,image/jpg,image/png,image/heic,image/heif">
+              <div class="photo-status ${stop.coordinate ? "ok" : stop.photoName ? "warn" : ""}">
+                ${stop.photoDataUrl ? `<img class="photo-preview" src="${stop.photoDataUrl}" alt="${escapeAttr(stop.photoName || "节点照片")}">` : ""}
+                <span>${escapeHtml(stop.coordinate ? (stop.photoGpsSource === "exif" ? "已读取照片定位" : "已填写手动坐标") : stop.photoName ? "照片无定位，请补充坐标" : "可选，优先用于自动定位" )}</span>
+                ${stop.photoDataUrl ? `<button class="remove-photo" type="button" data-remove-photo="${stop.id}">移除照片</button>` : ""}
+              </div>
+            </div>
+          </div>
+          <div class="field">
+            <label>地图坐标（兜底）</label>
+            <input data-stop-field="coordinate" value="${escapeAttr(stop.coordinate)}" placeholder="照片无定位时填写：纬度,经度">
+          </div>
+          <div class="core-note-row">
+            <div class="field">
+              <label>衣食住行 / 花费</label>
+              <textarea data-stop-field="logistics" placeholder="天气穿着、吃了什么、住在哪里、交通/门票/餐饮/住宿大概花费。">${escapeHtml(stop.logistics || mergeLegacyLogistics(stop))}</textarea>
+            </div>
+            <div class="field">
+              <label>关键经历</label>
+              <textarea data-stop-field="event" placeholder="这段路、这个地点、这一天发生了什么？">${escapeHtml(stop.event)}</textarea>
+            </div>
+            <div class="field">
+              <label>感受 / 提醒</label>
+              <textarea data-stop-field="feeling" placeholder="当时的感受、路线坑点、下次提醒。">${escapeHtml(stop.feeling)}</textarea>
+            </div>
+          </div>
+        `;
+        els.timelineList.appendChild(node);
+      }
+    }
+
+    function renderMatters() {
+      const trip = getActiveTrip();
+      els.matterList.innerHTML = "";
+
+      if (!trip.matters.length) {
+        trip.matters.push(createBlankMatter());
+      }
+
+      for (const matter of trip.matters) {
+        const node = document.createElement("article");
+        node.className = "matter-item";
+        node.dataset.matterId = matter.id;
+        node.innerHTML = `
+          <div class="matter-row">
+            <div class="field">
+              <label>类型</label>
+              <select data-matter-field="type">
+                ${["交通", "住宿", "吃饭", "花费", "意外", "提醒", "其他"].map(item => `<option value="${item}"${item === matter.type ? " selected" : ""}>${item}</option>`).join("")}
+              </select>
+            </div>
+            <div class="field">
+              <label>事项标题</label>
+              <input data-matter-field="title" value="${escapeAttr(matter.title)}" placeholder="例如：这家民宿适合下次再住">
+            </div>
+            <button class="small-action" type="button" data-remove-matter="${matter.id}">移除</button>
+          </div>
+          <div class="field">
+            <label>细节</label>
+            <textarea data-matter-field="detail" placeholder="为什么重要？下次要注意什么？">${escapeHtml(matter.detail)}</textarea>
+          </div>
+        `;
+        els.matterList.appendChild(node);
+      }
+    }
+
+    function renderProgress() {
+      const trip = getActiveTrip();
+      const completion = getCompletion(trip);
+      els.progressTitle.textContent = `复盘完成度 ${completion.percent}%`;
+      els.progressBar.style.width = `${completion.percent}%`;
+      els.progressMeta.textContent = completion.missing.length
+        ? `还可以补充：${completion.missing.slice(0, 3).join("、")}`
+        : "核心内容已经足够生成一篇完整游记。";
+    }
+
+    function renderOutput() {
+      renderOutputStats();
+      els.diaryPreview.textContent = state.generatedDiary || buildPreviewHint(getActiveTrip());
+      renderSaveStatus();
+    }
+
+    function renderOutputStats() {
+      const trip = getActiveTrip();
+      els.stopCount.textContent = trip?.stops.filter(stop => stop.place || stop.to || stop.event).length || 0;
+      els.matterCount.textContent = trip?.matters.filter(matter => matter.title || matter.detail).length || 0;
+      els.routeDistance.textContent = `${formatDistance(getRouteDistance(getRoutePoints(trip)))}`;
+    }
+
+    function renderRouteMap() {
+      const trip = getActiveTrip();
+      const points = getRoutePoints(trip);
+      els.routeMapSvg.innerHTML = "";
+      els.routePins.innerHTML = "";
+      els.routeEmpty.hidden = points.length > 0;
+      els.routePointCount.textContent = `${points.length} 个地点`;
+      els.routeSummary.textContent = buildRouteSummary(trip) || "等待生成轨迹。";
+
+      if (!points.length) return;
+
+      const bounds = getCoordinateBounds(points);
+      const projected = points.map(point => ({ ...point, ...projectCoordinate(point, bounds) }));
+
+      if (projected.length > 1) {
+        const polyline = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+        polyline.setAttribute("points", projected.map(point => `${point.x},${point.y}`).join(" "));
+        polyline.setAttribute("fill", "none");
+        polyline.setAttribute("stroke", "#0f766e");
+        polyline.setAttribute("stroke-width", "4");
+        polyline.setAttribute("stroke-linecap", "round");
+        polyline.setAttribute("stroke-linejoin", "round");
+        polyline.setAttribute("opacity", "0.84");
+        polyline.setAttribute("stroke-dasharray", "12 8");
+        polyline.style.animation = "route-draw 1.6s ease-out both";
+        els.routeMapSvg.appendChild(polyline);
+      }
+
+      for (const [index, point] of projected.entries()) {
+        const pin = document.createElement("div");
+        pin.className = `route-pin${point.photoDataUrl ? " photo-pin" : ""}`;
+        pin.dataset.routeStopId = point.stopId;
+        pin.title = `${point.date ? `${formatDate(point.date)} · ` : ""}${point.name}`;
+        if (point.photoDataUrl) pin.style.backgroundImage = `url("${point.photoDataUrl}")`;
+        pin.style.left = `${point.x / 10}%`;
+        pin.style.top = `${point.y / 4.2}%`;
+        pin.textContent = index + 1;
+        const label = document.createElement("span");
+        label.textContent = point.date ? `${formatDate(point.date)} · ${point.name}` : point.name;
+        pin.appendChild(label);
+        els.routePins.appendChild(pin);
+      }
+    }
+
+    function getRoutePoints(trip) {
+      if (!trip) return [];
+      return trip.stops
+        .map((stop, index) => {
+          const coord = parseCoordinate(stop.coordinate);
+          if (!coord) return null;
+          return {
+            ...coord,
+            index,
+            stopId: stop.id,
+            date: stop.date,
+            name: stop.to || stop.place || stop.from || `节点 ${index + 1}`,
+            transport: stop.transport || "",
+            photoDataUrl: stop.photoDataUrl || ""
+          };
+        })
+        .filter(Boolean);
+    }
+
+    function parseCoordinate(value) {
+      if (!value) return null;
+      const parts = String(value)
+        .trim()
+        .replace(/[，、\s]+/g, ",")
+        .split(",")
+        .map(part => Number(part));
+      if (parts.length < 2 || parts.some(number => Number.isNaN(number))) return null;
+      const [lat, lng] = parts;
+      if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+      return { lat, lng };
+    }
+
+    async function handleStopPhoto(stopNode, file) {
+      const trip = getActiveTrip();
+      const stop = trip && stopNode ? trip.stops.find(item => item.id === stopNode.dataset.stopId) : null;
+      if (!stop) return;
+      stop.photoName = file.name;
+      stop.photoGpsSource = "";
+      const gps = await readExifGps(file);
+      if (gps) {
+        stop.coordinate = `${gps.lat.toFixed(6)}, ${gps.lng.toFixed(6)}`;
+        stop.photoGpsSource = "exif";
+      }
+      try {
+        stop.photoDataUrl = await createPhotoThumbnail(file);
+      } catch {
+        stop.photoDataUrl = "";
+      }
+      afterTripEdit(true);
+    }
+
+    function createPhotoThumbnail(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const image = new Image();
+          image.onload = () => {
+            const max = 640;
+            const scale = Math.min(1, max / Math.max(image.naturalWidth, image.naturalHeight));
+            const canvas = document.createElement("canvas");
+            canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+            canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+            canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL("image/jpeg", 0.78));
+          };
+          image.onerror = reject;
+          image.src = reader.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function readExifGps(file) {
+      if (!/^image\/(jpeg|jpg)$/.test(file.type) && !/\.jpe?g$/i.test(file.name)) return null;
+      try {
+        return parseExifGps(await file.arrayBuffer());
+      } catch {
+        return null;
+      }
+    }
+
+    function parseExifGps(buffer) {
+      const view = new DataView(buffer);
+      if (view.byteLength < 12 || view.getUint16(0) !== 0xffd8) return null;
+      let offset = 2;
+      while (offset + 4 <= view.byteLength) {
+        if (view.getUint8(offset) !== 0xff) { offset += 1; continue; }
+        const marker = view.getUint8(offset + 1);
+        if (marker === 0xda || marker === 0xd9) break;
+        const size = view.getUint16(offset + 2);
+        if (marker === 0xe1 && offset + 10 <= view.byteLength && readAscii(view, offset + 4, 6) === "Exif\0\0") {
+          return parseExifGpsSegment(view, offset + 10);
+        }
+        offset += 2 + Math.max(size, 2);
+      }
+      return null;
+    }
+
+    function parseExifGpsSegment(view, tiffStart) {
+      if (tiffStart + 8 > view.byteLength) return null;
+      const little = view.getUint16(tiffStart) === 0x4949;
+      if (view.getUint16(tiffStart + 2, little) !== 42) return null;
+      const ifd = tiffStart + view.getUint32(tiffStart + 4, little);
+      if (ifd + 2 > view.byteLength) return null;
+      const count = view.getUint16(ifd, little);
+      let gpsOffset = null;
+      for (let index = 0; index < count; index += 1) {
+        const entry = ifd + 2 + index * 12;
+        if (entry + 12 > view.byteLength) break;
+        if (view.getUint16(entry, little) === 0x8825) gpsOffset = readExifValue(view, entry, tiffStart, little);
+      }
+      if (!gpsOffset) return null;
+      const gpsIfd = tiffStart + gpsOffset;
+      if (gpsIfd + 2 > view.byteLength) return null;
+      const gpsCount = view.getUint16(gpsIfd, little);
+      const values = {};
+      for (let index = 0; index < gpsCount; index += 1) {
+        const entry = gpsIfd + 2 + index * 12;
+        if (entry + 12 > view.byteLength) break;
+        const tag = view.getUint16(entry, little);
+        if ([1, 2, 3, 4].includes(tag)) values[tag] = readExifValue(view, entry, tiffStart, little);
+      }
+      if (!values[1] || !values[2] || !values[3] || !values[4]) return null;
+      const lat = dmsToDecimal(values[2]);
+      const lng = dmsToDecimal(values[4]);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+      return { lat: String(values[1]).toUpperCase().startsWith("S") ? -lat : lat, lng: String(values[3]).toUpperCase().startsWith("W") ? -lng : lng };
+    }
+
+    function readExifValue(view, entry, tiffStart, little) {
+      const type = view.getUint16(entry + 2, little);
+      const count = view.getUint32(entry + 4, little);
+      const sizes = { 1: 1, 2: 1, 3: 2, 4: 4, 5: 8, 7: 1 };
+      const size = (sizes[type] || 0) * count;
+      if (!size) return null;
+      const dataOffset = size <= 4 ? entry + 8 : tiffStart + view.getUint32(entry + 8, little);
+      if (dataOffset + size > view.byteLength) return null;
+      if (type === 2) return readAscii(view, dataOffset, count).replace(/\0/g, "").trim();
+      if (type === 3) return count === 1 ? view.getUint16(dataOffset, little) : Array.from({ length: count }, (_, i) => view.getUint16(dataOffset + i * 2, little));
+      if (type === 4) return count === 1 ? view.getUint32(dataOffset, little) : Array.from({ length: count }, (_, i) => view.getUint32(dataOffset + i * 4, little));
+      if (type === 5) return Array.from({ length: count }, (_, i) => {
+        const denominator = view.getUint32(dataOffset + i * 8 + 4, little);
+        return denominator ? view.getUint32(dataOffset + i * 8, little) / denominator : NaN;
+      });
+      return null;
+    }
+
+    function readAscii(view, offset, length) {
+      let text = "";
+      for (let index = 0; index < length && offset + index < view.byteLength; index += 1) text += String.fromCharCode(view.getUint8(offset + index));
+      return text;
+    }
+
+    function dmsToDecimal(value) {
+      return Array.isArray(value) && value.length >= 3 ? value[0] + value[1] / 60 + value[2] / 3600 : NaN;
+    }
+
+    function getCoordinateBounds(points) {
+      const lats = points.map(point => point.lat);
+      const lngs = points.map(point => point.lng);
+      let minLat = Math.min(...lats);
+      let maxLat = Math.max(...lats);
+      let minLng = Math.min(...lngs);
+      let maxLng = Math.max(...lngs);
+
+      if (minLat === maxLat) {
+        minLat -= 0.01;
+        maxLat += 0.01;
+      }
+      if (minLng === maxLng) {
+        minLng -= 0.01;
+        maxLng += 0.01;
+      }
+
+      return { minLat, maxLat, minLng, maxLng };
+    }
+
+    function projectCoordinate(point, bounds) {
+      const pad = 80;
+      const width = 1000 - pad * 2;
+      const height = 420 - pad * 2;
+      const x = pad + ((point.lng - bounds.minLng) / (bounds.maxLng - bounds.minLng)) * width;
+      const y = pad + ((bounds.maxLat - point.lat) / (bounds.maxLat - bounds.minLat)) * height;
+      return { x, y };
+    }
+
+    function getRouteDistance(points) {
+      if (!points || points.length < 2) return 0;
+      return points.slice(1).reduce((total, point, index) => total + haversine(points[index], point), 0);
+    }
+
+    function haversine(a, b) {
+      const radius = 6371;
+      const toRad = degree => (degree * Math.PI) / 180;
+      const dLat = toRad(b.lat - a.lat);
+      const dLng = toRad(b.lng - a.lng);
+      const lat1 = toRad(a.lat);
+      const lat2 = toRad(b.lat);
+      const h = Math.sin(dLat / 2) ** 2
+        + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+      return 2 * radius * Math.asin(Math.sqrt(h));
+    }
+
+    function formatDistance(km) {
+      if (!km) return "0 km";
+      return km < 10 ? `${km.toFixed(1)} km` : `${Math.round(km)} km`;
+    }
+
+    function buildRouteSummary(trip) {
+      const points = getRoutePoints(trip);
+      if (!points.length) return "";
+      const distance = getRouteDistance(points);
+      const names = points.map(point => point.name).join(" -> ");
+      const photoCount = points.filter(point => point.photoDataUrl).length;
+      const photoText = photoCount ? `，其中 ${photoCount} 个节点带照片` : "";
+      return points.length > 1
+        ? `已串联 ${points.length} 个地点${photoText}，直线估算约 ${formatDistance(distance)}：${names}`
+        : `已记录 1 个地点${photoText}：${names}`;
+    }
+
+    function updateWorkbenchTitle() {
+      const trip = getActiveTrip();
+      els.workbenchTitle.textContent = trip?.title || "旅行复盘会议";
+      els.workbenchSubtitle.textContent = `${trip?.destination || "未填写目的地"} · ${formatDateRange(trip?.startDate, trip?.endDate)} · ${trip?.people || "未填写同行人"}`;
+    }
+
+    function renderSaveStatus() {
+      const savedAt = localStorage.getItem(`${STORAGE_KEY}-saved-at`);
+      const text = savedAt ? `已自动保存：${formatDateTime(savedAt)}` : "等待保存";
+      els.lastSavedText.textContent = text;
+      els.saveStatus.textContent = savedAt
+        ? `线下版：所有内容自动保存在当前浏览器，本机处理，不上传。最近保存 ${formatDateTime(savedAt)}`
+        : "线下版：所有内容自动保存在当前浏览器，本机处理，不上传。";
+    }
+
+    function createTrip() {
+      const trip = {
+        id: createId(),
+        title: "新的旅行复盘",
+        destination: "",
+        startDate: "",
+        endDate: "",
+        people: "",
+        tone: "private",
+        reason: "",
+        expectation: "",
+        memory: createBlankMemory(),
+        reflection: createBlankReflection(),
+        stops: [createBlankStop()],
+        matters: [createBlankMatter()]
+      };
+      state.trips.unshift(trip);
+      state.activeTripId = trip.id;
+      state.activeTab = "base";
+      state.generatedDiary = "";
+      saveState();
+      render();
+    }
+
+    function deleteActiveTrip() {
+      if (state.trips.length <= 1) {
+        resetDemo();
+        return;
+      }
+      state.trips = state.trips.filter(trip => trip.id !== state.activeTripId);
+      state.activeTripId = state.trips[0].id;
+      state.generatedDiary = "";
+      saveState();
+      render();
+    }
+
+    function addStop() {
+      const trip = getActiveTrip();
+      const firstDatedStop = trip.stops.find(stop => stop.date);
+      const currentTopStop = trip.stops[0];
+      trip.stops.unshift(createBlankStop({
+        date: firstDatedStop?.date || trip.startDate || "",
+        from: currentTopStop?.to || currentTopStop?.place || ""
+      }));
+      afterTripEdit(true);
+    }
+
+    function addMatter() {
+      getActiveTrip().matters.push(createBlankMatter());
+      afterTripEdit(true);
+    }
+
+    function buildDiary(trip) {
+      if (!trip) return "";
+      const title = trip.title || `${trip.destination || "这次旅行"}复盘`;
+      const opening = buildOpening(trip);
+      const route = buildRouteSection(trip);
+      const matters = buildMatterSection(trip);
+      const memory = buildMemorySection(trip);
+      const reflection = buildReflectionSection(trip);
+      const closing = trip.reflection.closing || "这趟旅行最终留下来的，不只是去过的地方，而是我重新看见自己的方式。";
+
+      return [
+        `# ${title}`,
+        "",
+        opening,
+        "",
+        "## 路上的几个节点",
+        "",
+        route,
+        "",
+        "## 重要事项",
+        "",
+        matters,
+        "",
+        "## 最想保留的回忆",
+        "",
+        memory,
+        "",
+        "## 旅行后的感悟",
+        "",
+        reflection,
+        "",
+        closing
+      ].filter(Boolean).join("\n");
+    }
+
+    function buildOpening(trip) {
+      const time = formatDateRange(trip.startDate, trip.endDate);
+      const people = trip.people ? `同行的是${trip.people}` : "同行人已经有些模糊，但当时的状态还值得重新打捞";
+      const reason = trip.reason || "这次出发并不只是为了抵达某个地点，也像是在给当时的自己换一个空间。";
+      const expectation = trip.expectation ? `出发前，我最期待的是：${trip.expectation}` : "出发前的期待没有被完整记录下来，但这也正是复盘要补上的部分。";
+
+      if (trip.tone === "clean") {
+        return `这次旅行的目的地是${trip.destination || "未填写目的地"}，时间是${time}。${people}。${reason}\n\n${expectation}`;
+      }
+
+      if (trip.tone === "story") {
+        return `现在回看${time}的${trip.destination || "那次旅行"}，它更像一段被时间折叠起来的故事。${people}。当时决定出发，是因为${reason}\n\n${expectation}`;
+      }
+
+      return `我想把${time}的${trip.destination || "这次旅行"}重新整理一遍。${people}。当时之所以出发，是因为${reason}\n\n${expectation}`;
+    }
+
+    function buildRouteSection(trip) {
+      const stops = trip.stops.filter(stop => stop.place || stop.to || stop.event || stop.feeling || stop.from || stop.transport || stop.logistics);
+      if (!stops.length) return "这部分还需要补充几个关键地点。游记不需要记录每一分钟，只要把真正影响记忆的节点写出来。";
+      const summary = buildRouteSummary(trip);
+
+      const details = stops.map((stop, index) => {
+        const date = stop.date ? `${formatDate(stop.date)}，` : "";
+        const place = stop.to || stop.place || "一个还没命名的地点";
+        const movement = buildMovementLine(stop);
+        const logistics = buildLogisticsLine(stop);
+        const event = stop.event || "这里发生了什么还需要继续补充。";
+        const feeling = stop.feeling ? `当时的感受是：${stop.feeling}` : "当时的情绪还没有写下。";
+        const marker = stop.weight === "高光" ? "高光节点" : stop.weight === "重要" ? "重要节点" : "节点";
+        return [
+          `${index + 1}. ${date}${place}（${marker}）`,
+          movement,
+          logistics,
+          event,
+          stop.logisticsNote ? `补充提醒：${stop.logisticsNote}` : "",
+          feeling
+        ].filter(Boolean).join("\n");
+      }).join("\n\n");
+
+      return [summary, details].filter(Boolean).join("\n\n");
+    }
+
+    function buildMovementLine(stop) {
+      const route = stop.from || stop.to
+        ? `${stop.from || "上一站"} -> ${stop.to || stop.place || "下一站"}`
+        : "";
+      const transport = stop.transport ? `交通方式：${stop.transport}` : "";
+      return [route ? `移动路线：${route}` : "", transport].filter(Boolean).join("；");
+    }
+
+    function buildLogisticsLine(stop) {
+      if (stop.logistics) return `衣食住行/花费：${stop.logistics}`;
+      const items = [
+        stop.outfit ? `衣/天气/体力：${stop.outfit}` : "",
+        stop.food ? `食：${stop.food}` : "",
+        stop.lodging ? `住：${stop.lodging}` : "",
+        stop.cost ? `行/花费：${stop.cost}` : ""
+      ].filter(Boolean);
+      return items.length ? items.join("\n") : "";
+    }
+
+    function mergeLegacyLogistics(stop) {
+      return [
+        stop.outfit ? `衣/天气/体力：${stop.outfit}` : "",
+        stop.food ? `食：${stop.food}` : "",
+        stop.lodging ? `住：${stop.lodging}` : "",
+        stop.cost ? `行/花费：${stop.cost}` : "",
+        stop.logisticsNote ? `提醒：${stop.logisticsNote}` : ""
+      ].filter(Boolean).join("\n");
+    }
+
+    function buildMatterSection(trip) {
+      const matters = trip.matters.filter(matter => matter.title || matter.detail);
+      if (!matters.length) return "暂时还没有记录交通、住宿、吃饭、花费或意外事项。之后补上这些信息，会让这篇游记更像一份可以回看的旅行档案。";
+
+      return matters.map(matter => {
+        const title = matter.title || "未命名事项";
+        const detail = matter.detail || "细节待补充。";
+        return `- ${matter.type}：${title}\n  ${detail}`;
+      }).join("\n");
+    }
+
+    function buildMemorySection(trip) {
+      const blocks = [
+        trip.memory.highlight ? `高光片段：${trip.memory.highlight}` : "",
+        trip.memory.turning ? `意外或转折：${trip.memory.turning}` : "",
+        trip.memory.person ? `关键人物：${trip.memory.person}` : "",
+        trip.memory.sensory ? `感官记忆：${trip.memory.sensory}` : "",
+        trip.memory.photoNote ? `照片素材：${trip.memory.photoNote}` : ""
+      ].filter(Boolean);
+
+      return blocks.length
+        ? blocks.join("\n\n")
+        : "这一部分还需要写下更具体的画面。真正会留下来的，往往是某一束光、某句话、一次临时改变路线，或者一个当时没有意识到的重要瞬间。";
+    }
+
+    function buildReflectionSection(trip) {
+      const blocks = [
+        trip.reflection.learned ? `这次旅行让我意识到：${trip.reflection.learned}` : "",
+        trip.reflection.regret ? `遗憾或未完成：${trip.reflection.regret}` : "",
+        trip.reflection.nextTime ? `下次提醒：${trip.reflection.nextTime}` : ""
+      ].filter(Boolean);
+
+      return blocks.length
+        ? blocks.join("\n\n")
+        : "现在还没有写下旅行后的感悟。可以从一个问题开始：这趟旅行结束后，我对自己、关系、生活节奏或世界的看法有没有发生一点变化？";
+    }
+
+    function buildPreviewHint(trip) {
+      return trip
+        ? `点击“生成草稿”，这里会生成《${trip.title || "未命名旅行"}》的游记初稿。\n\n建议先至少补齐：出行动机、2-3 个轨迹节点、1 个高光片段和旅行后的感悟。`
+        : "还没有可生成的旅行记录。";
+    }
+
+    async function copyDiary() {
+      const text = state.generatedDiary || buildDiary(getActiveTrip());
+      try {
+        await navigator.clipboard.writeText(text);
+        els.copyStatus.textContent = "已复制游记文本。";
+      } catch {
+        els.copyStatus.textContent = "浏览器没有开放复制权限，可以手动选中文本复制。";
+      }
+    }
+
+    function exportMarkdown() {
+      const trip = getActiveTrip();
+      const text = state.generatedDiary || buildDiary(trip);
+      downloadText(`${sanitizeFileName(trip.title || "旅行游记")}.md`, text, "text/markdown");
+    }
+
+    function exportData() {
+      downloadText(`旅行复盘记录-${formatExportDate(new Date())}.json`, JSON.stringify({
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        activeTripId: state.activeTripId,
+        generatedDiary: state.generatedDiary,
+        trips: state.trips
+      }, null, 2), "application/json");
+      els.copyStatus.textContent = "已导出完整备份。换浏览器或换电脑时，可以用“导入备份”恢复。";
+    }
+
+    async function importData(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+        if (!Array.isArray(data.trips) || !data.trips.length) {
+          throw new Error("invalid backup");
+        }
+
+        state.trips = data.trips.map(normalizeTrip);
+        state.activeTripId = state.trips.some(trip => trip.id === data.activeTripId)
+          ? data.activeTripId
+          : state.trips[0].id;
+        state.generatedDiary = data.generatedDiary || "";
+        state.activeTab = "base";
+        saveState();
+        render();
+        els.copyStatus.textContent = `已导入 ${state.trips.length} 次旅行记录。`;
+      } catch {
+        els.copyStatus.textContent = "导入失败。请确认选择的是这个工具导出的 JSON 备份文件。";
+      } finally {
+        event.target.value = "";
+      }
+    }
+
+    function printDiary() {
+      if (!state.generatedDiary) {
+        state.generatedDiary = buildDiary(getActiveTrip());
+        saveState();
+        renderOutput();
+      }
+      window.print();
+    }
+
+    function resetDemo() {
+      state.trips = getDemoTrips();
+      state.activeTripId = state.trips[0].id;
+      state.activeTab = "base";
+      state.generatedDiary = "";
+      saveState();
+      render();
+    }
+
+    function getCompletion(trip) {
+      if (!trip) return { percent: 0, missing: [] };
+      const checks = [
+        ["标题", trip.title],
+        ["目的地", trip.destination],
+        ["日期", trip.startDate && trip.endDate],
+        ["出行动机", trip.reason],
+        ["期待", trip.expectation],
+        ["至少两个轨迹节点", trip.stops.filter(stop => (stop.place || stop.to) && stop.event).length >= 2],
+        ["交通方式", trip.stops.some(stop => stop.transport || stop.from || stop.to)],
+        ["地图坐标", getRoutePoints(trip).length >= 2],
+        ["衣食住行花费", trip.stops.some(stop => stop.logistics || stop.outfit || stop.food || stop.lodging || stop.cost)],
+        ["重要事项", trip.matters.some(matter => matter.title || matter.detail)],
+        ["高光片段", trip.memory.highlight],
+        ["感官记忆", trip.memory.sensory],
+        ["旅行感悟", trip.reflection.learned],
+        ["下次提醒", trip.reflection.nextTime],
+        ["一句话收束", trip.reflection.closing]
+      ];
+      const done = checks.filter(([, value]) => Boolean(value)).length;
+      return {
+        percent: Math.round((done / checks.length) * 100),
+        missing: checks.filter(([, value]) => !value).map(([label]) => label)
+      };
+    }
+
+    function getActiveTrip() {
+      return state.trips.find(trip => trip.id === state.activeTripId) || state.trips[0];
+    }
+
+    function createBlankStop(defaults = {}) {
+      return {
+        id: createId(),
+        date: defaults.date || "",
+        place: "",
+        from: defaults.from || "",
+        to: "",
+        transport: "",
+        coordinate: "",
+        photoName: "",
+        photoDataUrl: "",
+        photoGpsSource: "",
+        logistics: "",
+        outfit: "",
+        food: "",
+        lodging: "",
+        cost: "",
+        logisticsNote: "",
+        weight: "普通",
+        event: "",
+        feeling: ""
+      };
+    }
+
+    function createBlankMatter() {
+      return { id: createId(), type: "提醒", title: "", detail: "" };
+    }
+
+    function createBlankMemory() {
+      return { highlight: "", turning: "", person: "", sensory: "", photoNote: "" };
+    }
+
+    function createBlankReflection() {
+      return { learned: "", regret: "", nextTime: "", closing: "" };
+    }
+
+    function getDemoTrips() {
+      return [{
+        id: createId(),
+        title: "京都初夏慢行复盘",
+        destination: "日本京都",
+        startDate: "2019-06-03",
+        endDate: "2019-06-07",
+        people: "朋友两人",
+        tone: "private",
+        reason: "那段时间工作节奏很紧，想找一个可以慢下来走路的城市，也想看看自己离开熟悉环境以后会不会重新变得敏感一点。",
+        expectation: "期待寺院、街巷和傍晚的光，也期待不用赶行程，只是把一天交给脚步。",
+        memory: {
+          highlight: "傍晚从鸭川边走回住处，风很轻，路边有人骑车经过，突然觉得自己很久没有这样安静地在一个城市里移动。",
+          turning: "原计划去很多景点，第二天开始临时减少安排，把时间留给散步和发呆，反而更像真正的旅行。",
+          person: "同行朋友在便利店门口说，旅行最好的部分可能不是看到什么，而是终于不用解释自己为什么沉默。",
+          sensory: "潮湿的木头味、寺院石阶的凉意、雨后街道反光、夜里自动贩卖机的声音。",
+          photoNote: "适合放鸭川、清水寺后山、便利店夜景和雨后街道的照片。"
+        },
+        reflection: {
+          learned: "我意识到自己并不一定需要宏大的景点，有时候只需要一个允许我慢慢恢复感受力的地方。",
+          regret: "没有把每天晚上回到住处后的想法及时写下来，现在只剩下一些片段。",
+          nextTime: "以后旅行不要排太满，每天最多保留一个必须完成的目的地。",
+          closing: "那几天的京都像一次提醒：生活不是只有推进，也可以有停留。"
+        },
+        stops: [
+          {
+            id: createId(),
+            date: "2019-06-03",
+            place: "鸭川",
+            from: "京都站",
+            to: "鸭川附近住处",
+            transport: "地铁 + 步行",
+            coordinate: "35.0116, 135.7681",
+            outfit: "初夏微热，傍晚有风，适合轻薄外套和好走的鞋。",
+            food: "便利店买了饭团和饮料，晚上在河边慢慢吃。",
+            lodging: "住在鸭川附近，步行能回住处，位置比房间本身更重要。",
+            cost: "交通和简单晚餐花费不高，主要成本是住宿。",
+            logisticsNote: "第一天不要安排太满，抵达后留时间熟悉住处周边。",
+            weight: "高光",
+            event: "第一天傍晚沿着河边走，没有明确目的地，只是看人坐在河岸边聊天、发呆、吃东西。",
+            feeling: "心里慢慢松下来，像是终于从日常的噪音里退出来。"
+          },
+          {
+            id: createId(),
+            date: "2019-06-04",
+            place: "清水寺附近街巷",
+            from: "住处",
+            to: "清水寺",
+            transport: "公交 + 步行",
+            coordinate: "34.9949, 135.7850",
+            outfit: "白天走路多，鞋子很重要；坡路多，背包越轻越好。",
+            food: "路边喝了茶，甜点印象比正餐更深。",
+            lodging: "继续住同一处，减少换酒店带来的体力消耗。",
+            cost: "门票、茶点和公交费用都不算高，但景区周边小店容易临时消费。",
+            logisticsNote: "热门街巷上午人流已经不少，下次可以更早出门。",
+            weight: "重要",
+            event: "上午去了清水寺，后来没有继续赶景点，而是在附近的小路反复走。",
+            feeling: "比起景点本身，更记得石板路、店铺门口的风铃和走累后坐下来的那杯茶。"
+          }
+        ],
+        matters: [
+          {
+            id: createId(),
+            type: "提醒",
+            title: "每天只保留一个硬安排",
+            detail: "这次最舒服的部分来自临时空出来的时间。以后做计划时要主动留白，不要把旅行变成任务清单。"
+          }
+        ]
+      }];
+    }
+
+    function loadState() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY));
+      } catch {
+        return null;
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        trips: state.trips,
+        activeTripId: state.activeTripId,
+        generatedDiary: state.generatedDiary
+      }));
+      localStorage.setItem(`${STORAGE_KEY}-saved-at`, new Date().toISOString());
+    }
+
+    function normalizeTrip(trip) {
+      return {
+        id: trip.id || createId(),
+        title: trip.title || "未命名旅行",
+        destination: trip.destination || "",
+        startDate: trip.startDate || "",
+        endDate: trip.endDate || "",
+        people: trip.people || "",
+        tone: ["private", "story", "clean"].includes(trip.tone) ? trip.tone : "private",
+        reason: trip.reason || "",
+        expectation: trip.expectation || "",
+        memory: { ...createBlankMemory(), ...(trip.memory || {}) },
+        reflection: { ...createBlankReflection(), ...(trip.reflection || {}) },
+        stops: Array.isArray(trip.stops) && trip.stops.length
+          ? trip.stops.map(normalizeStop)
+          : [createBlankStop()],
+        matters: Array.isArray(trip.matters) && trip.matters.length
+          ? trip.matters.map(matter => ({
+            ...createBlankMatter(),
+            ...matter,
+            id: matter.id || createId()
+          }))
+          : [createBlankMatter()]
+      };
+    }
+
+    function normalizeStop(stop) {
+      const merged = {
+        ...createBlankStop(),
+        ...stop,
+        id: stop.id || createId()
+      };
+      if (!merged.to && merged.place) {
+        merged.to = merged.place;
+      }
+      if (!merged.logistics) {
+        merged.logistics = mergeLegacyLogistics(merged);
+      }
+      return merged;
+    }
+
+    function downloadText(filename, text, type) {
+      const blob = new Blob([text], { type });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function formatDateRange(start, end) {
+      if (start && end) return `${formatDate(start)} - ${formatDate(end)}`;
+      if (start) return `${formatDate(start)}起`;
+      if (end) return `${formatDate(end)}前`;
+      return "未填写日期";
+    }
+
+    function formatDate(value) {
+      if (!value) return "";
+      const date = new Date(`${value}T00:00:00`);
+      if (Number.isNaN(date.getTime())) return value;
+      return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
+    }
+
+    function formatDateTime(value) {
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return "";
+      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    }
+
+    function formatExportDate(date) {
+      return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}-${pad(date.getHours())}${pad(date.getMinutes())}`;
+    }
+
+    function pad(value) {
+      return String(value).padStart(2, "0");
+    }
+
+    function createId() {
+      return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+    }
+
+    function sanitizeFileName(value) {
+      return value.replace(/[\\/:*?"<>|]/g, "_").trim() || "旅行游记";
+    }
+
+    function escapeHtml(value = "") {
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function escapeAttr(value = "") {
+      return escapeHtml(value).replace(/\n/g, " ");
+    }
+  </script>
+</body>
+</html>
