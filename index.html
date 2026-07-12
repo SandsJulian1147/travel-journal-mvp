@@ -649,6 +649,24 @@
       margin-top: 10px;
     }
 
+    .cloud-tools {
+      margin-top: 10px;
+      border-top: 1px solid rgba(15, 111, 104, 0.12);
+      padding-top: 10px;
+    }
+
+    .cloud-tools summary {
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 800;
+      list-style: none;
+    }
+
+    .cloud-tools summary::-webkit-details-marker {
+      display: none;
+    }
+
     @media (min-width: 760px) {
       .mobile-prototype {
         padding: 24px 0;
@@ -707,7 +725,8 @@
 
   <script>
     const STORAGE_KEY = "travel-journal-meeting-mvp";
-    const SYNC_CONFIG_KEY = `${STORAGE_KEY}-supabase-sync`;
+    const SYNC_CONFIG_KEY = `${STORAGE_KEY}-vercel-sync`;
+    const LEGACY_SYNC_CONFIG_KEY = `${STORAGE_KEY}-supabase-sync`;
     const SYNC_SAVED_AT_KEY = `${STORAGE_KEY}-saved-at`;
     const ASSETS = {
       map: "assets/map-qingdao-memory.png",
@@ -880,6 +899,7 @@
           </div>
           <section class="sheet">
             <div class="grabber"></div>
+            ${renderCloudSyncPanel()}
             ${active ? `
               <article class="panel" style="margin:0 0 18px;">
                 <div class="trip-summary">
@@ -896,7 +916,6 @@
                 </div>
               </article>
             ` : ""}
-            ${renderCloudSyncPanel()}
             <div class="section-head">
               <div>
                 <h2>我的回忆旅程</h2>
@@ -921,32 +940,34 @@
 
     function renderCloudSyncPanel() {
       if (state.sync.enabled) {
-        const label = state.sync.inviteLabel ? `邀请码 ${escapeHtml(state.sync.inviteLabel)}` : "已连接邀请码";
         const status = state.sync.syncing
           ? "正在同步..."
           : state.sync.error
             ? state.sync.error
             : state.sync.lastSyncedAt
-              ? `上次云端同步：${formatDateTime(state.sync.lastSyncedAt)}`
-              : "已开启云端同步。";
+              ? `已保存到云端 · ${formatDateTime(state.sync.lastSyncedAt)}`
+              : "家庭空间已连接，之后会自动保存。";
         return `
           <article class="cloud-card">
             <div class="cloud-head">
               <div>
-                <h3>云端保存</h3>
-                <p class="small">${label}</p>
+                <h3>我们的旅行空间</h3>
+                <p class="small">两台设备共享同一份旅行回忆</p>
               </div>
-              <span class="sync-badge">${state.sync.syncing ? "同步中" : "已开启"}</span>
+              <span class="sync-badge">${state.sync.syncing ? "同步中" : "已同步"}</span>
             </div>
             <p class="status">${escapeHtml(status)}</p>
-            <div class="cloud-actions">
-              <button class="quiet" data-action="sync-now">立即同步</button>
-              <button class="quiet" data-action="disconnect-sync">退出云端</button>
-            </div>
-            <div class="cloud-actions">
-              <button class="quiet" data-action="sync-pull">从云端恢复</button>
-              <button class="quiet" data-action="sync-push">覆盖云端</button>
-            </div>
+            <details class="cloud-tools">
+              <summary>同步设置</summary>
+              <div class="cloud-actions">
+                <button class="quiet" data-action="sync-now">立即保存</button>
+                <button class="quiet" data-action="disconnect-sync">退出空间</button>
+              </div>
+              <div class="cloud-actions">
+                <button class="quiet" data-action="sync-pull">恢复云端记录</button>
+                <button class="quiet" data-action="sync-push">覆盖云端记录</button>
+              </div>
+            </details>
           </article>
         `;
       }
@@ -954,14 +975,14 @@
         <article class="cloud-card">
           <div class="cloud-head">
             <div>
-              <h3>云端保存</h3>
-              <p class="small">输入邀请码后，会通过 Vercel 自动同步到云端。</p>
+              <h3>进入我们的旅行空间</h3>
+              <p class="small">输入一次家庭密钥，之后会自动保存和同步。</p>
             </div>
             <span class="sync-badge">本地</span>
           </div>
-          <div class="field"><label>邀请码</label><input id="syncInviteCode" type="password" autocomplete="off" placeholder="建议 12 位以上，自己保存好"></div>
-          <button class="primary" data-action="connect-sync" style="width:100%;">开启云端同步</button>
-          <p class="status">${escapeHtml(state.sync.error || "未开启时，内容仍会保存在当前浏览器。")}</p>
+          <div class="field"><label>家庭密钥</label><input id="syncInviteCode" type="password" autocomplete="current-password" placeholder="例如：niuma-family-2026"></div>
+          <button class="primary" data-action="connect-sync" style="width:100%;">进入家庭空间</button>
+          <p class="status">${escapeHtml(state.sync.error || "还没有进入空间，内容暂时保存在当前设备。")}</p>
         </article>
       `;
     }
@@ -1579,7 +1600,9 @@
 
     function loadSyncConfig() {
       try {
-        return JSON.parse(localStorage.getItem(SYNC_CONFIG_KEY)) || {};
+        return JSON.parse(localStorage.getItem(SYNC_CONFIG_KEY))
+          || JSON.parse(localStorage.getItem(LEGACY_SYNC_CONFIG_KEY))
+          || {};
       } catch {
         return {};
       }
@@ -1599,7 +1622,7 @@
     async function connectSync() {
       const inviteCode = document.getElementById("syncInviteCode")?.value.trim() || "";
       if (inviteCode.length < 6) {
-        state.sync.error = "请填写至少 6 位邀请码。";
+        state.sync.error = "请填写至少 6 位家庭密钥。";
         render();
         return;
       }
@@ -1628,7 +1651,8 @@
         error: ""
       };
       localStorage.removeItem(SYNC_CONFIG_KEY);
-      state.status = "已退出云端同步，本地数据仍保留。";
+      localStorage.removeItem(LEGACY_SYNC_CONFIG_KEY);
+      state.status = "已退出家庭空间，本地数据仍保留。";
       render();
     }
 
@@ -1641,7 +1665,7 @@
     async function syncNow(mode = "auto", options = {}) {
       if (!state.sync.enabled) return;
       if (!state.sync.inviteHash) {
-        state.sync.error = "邀请码配置不完整。";
+        state.sync.error = "家庭密钥配置不完整。";
         saveSyncConfig();
         if (!options.silent) render();
         return;
@@ -1674,7 +1698,7 @@
         state.sync.lastSyncedAt = new Date().toISOString();
         saveSyncConfig();
       } catch (error) {
-        state.sync.error = `云端同步失败：${error.message || "请检查 Supabase 配置"}`;
+        state.sync.error = `云端同步失败：${error.message || "请检查 Vercel 存储配置"}`;
         saveSyncConfig();
       } finally {
         state.sync.syncing = false;
