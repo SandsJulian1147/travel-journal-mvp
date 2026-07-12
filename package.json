@@ -1,0 +1,13 @@
+{
+  "name": "travel-journal-mvp",
+  "version": "0.3.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "vercel dev",
+    "test": "node --check api/sync.js"
+  },
+  "dependencies": {
+    "@vercel/blob": "^1.0.2"
+  }
+}
